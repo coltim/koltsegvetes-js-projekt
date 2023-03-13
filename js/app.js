@@ -15,8 +15,8 @@ const koltsegvetesVezerlo = (function () {
     let osszeg = 0;
     adat.tetelek[tipus].forEach((current) => {
       osszeg += current.ertek;
-      adat.osszegek[tipus] = osszeg;
     });
+    adat.osszegek[tipus] = osszeg;
   };
 
   let adat = {
@@ -49,8 +49,20 @@ const koltsegvetesVezerlo = (function () {
       }
 
       adat.tetelek[tipus].push(ujTetel);
-
       return ujTetel;
+    },
+
+    tetelTorol: (tipus, id) => {
+      let idTomb, index;
+      console.log('ez most ' + tipus);
+      idTomb = adat.tetelek[tipus].map((aktualis) => {
+        return aktualis.id;
+      });
+      index = idTomb.indexOf(id);
+
+      if (index !== -1) {
+        adat.tetelek[tipus].splice(index, 1);
+      }
     },
 
     koltsegvetesSzamolas: () => {
@@ -110,7 +122,7 @@ const feluletVezerlo = (function () {
       //bevetel
       if (tipus === 'bev') {
         elem = DOMBevetelTarolo;
-        html = `<div class="tetel clearfix" id="${obj.ID}">
+        html = `<div class="tetel clearfix" id="bev-${obj.id}">
                 <div class="tetel__leiras">${obj.leiras}</div>
                 <div class="right clearfix">
                   <div class="tetel__ertek">${obj.ertek}</div>
@@ -122,7 +134,7 @@ const feluletVezerlo = (function () {
       } else if (tipus === 'kia') {
         //kiadas
         elem = DOMKiadasTarolo;
-        html = `<div class="tetel clearfix" id="${obj.ID}">
+        html = `<div class="tetel clearfix" id="kia-${obj.id}">
       <div class="tetel__leiras">${obj.leiras}</div>
       <div class="right clearfix">
         <div class="tetel__ertek">${obj.ertek}</div>
@@ -133,6 +145,11 @@ const feluletVezerlo = (function () {
     </div>`;
       }
       elem.insertAdjacentHTML('beforeend', html);
+    },
+
+    tetelTorles: (tetelID) => {
+      let elem = document.getElementById(tetelID);
+      elem.parentNode.removeChild(elem);
     },
 
     urlapTorles: () => {
@@ -169,8 +186,10 @@ const vezerlo = (function (koltsegvetesVez, feluletVez) {
         vezTetelHozzadas();
       }
     });
+    DOMkontener.addEventListener('click', vezTetelTorles);
   };
   const DOMHozzaad_gomb = document.querySelector('.hozzaad__gomb');
+  const DOMkontener = document.querySelector('.kontener');
 
   const osszegFrissitese = () => {
     koltsegvetesVezerlo.koltsegvetesSzamolas();
@@ -198,6 +217,23 @@ const vezerlo = (function (koltsegvetesVez, feluletVez) {
 
       osszegFrissitese();
     }
+  };
+
+  const vezTetelTorles = (event) => {
+    let tetelID, splitID, tipus;
+    tetelID = event.target.parentNode.parentNode.parentNode.parentNode.id;
+    console.log('EY MASIK ' + tetelID);
+    if (tetelID) {
+      splitID = tetelID.split('-');
+      tipus = splitID[0];
+      ID = parseInt(splitID[1]);
+    }
+
+    koltsegvetesVezerlo.tetelTorol(tipus, ID);
+
+    feluletVezerlo.tetelTorles(tetelID);
+
+    osszegFrissitese();
   };
 
   return {
