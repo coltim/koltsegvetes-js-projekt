@@ -3,6 +3,19 @@ const koltsegvetesVezerlo = (function () {
     this.id = id;
     this.leiras = leiras;
     this.ertek = ertek;
+    this.szazalek = -1;
+  };
+
+  kiadas.prototype.szazalekSzamitas = function (osszBevetel) {
+    if (osszBevetel > 0) {
+      this.szazalek = Math.round((this.ertek / osszBevetel) * 100);
+    } else {
+      this.szazalek = -1;
+    }
+  };
+
+  kiadas.prototype.getSzazelek = function () {
+    return this.szazalek;
   };
 
   let bevetel = function (id, leiras, ertek) {
@@ -54,7 +67,6 @@ const koltsegvetesVezerlo = (function () {
 
     tetelTorol: (tipus, id) => {
       let idTomb, index;
-      console.log('ez most ' + tipus);
       idTomb = adat.tetelek[tipus].map((aktualis) => {
         return aktualis.id;
       });
@@ -87,6 +99,19 @@ const koltsegvetesVezerlo = (function () {
       };
     },
 
+    szazalekokSzamolasa: () => {
+      adat.tetelek.kia.forEach((aktualisElem) => {
+        aktualisElem.szazalekSzamitas(adat.osszegek.bev);
+      });
+    },
+
+    szazalekokLekerdezese: () => {
+      let kiadasSzazlekok = adat.tetelek.kia.map((aktualisElem) => {
+        return aktualisElem.getSzazelek();
+      });
+      return kiadasSzazlekok;
+    },
+
     teszt: () => console.log(adat),
   };
 })();
@@ -107,6 +132,18 @@ const feluletVezerlo = (function () {
   const DOMOszazalekCimke = document.querySelector(
     '.koltsegvetes__kiadasok--szazalek'
   );
+  const DOMSzazalekokCimke = document.querySelectorAll('.tetel__szazalek');
+  const DOMDatumCimke = document.querySelector('.koltsegvetes__cim--honap');
+
+  let szamFormazo = (szam, tipus) => {
+    let elojel;
+    szam = Math.abs(szam);
+    szam = szam.toLocaleString();
+
+    tipus === 'kia' ? (elojel = '-') : (elojel = '+');
+    szam = elojel + '' + szam;
+    return szam;
+  };
 
   return {
     getInput: function () {
@@ -125,7 +162,10 @@ const feluletVezerlo = (function () {
         html = `<div class="tetel clearfix" id="bev-${obj.id}">
                 <div class="tetel__leiras">${obj.leiras}</div>
                 <div class="right clearfix">
-                  <div class="tetel__ertek">${obj.ertek}</div>
+                  <div class="tetel__ertek">${szamFormazo(
+                    obj.ertek,
+                    tipus
+                  )}</div>
                   <div class="tetel__torol">
                     <button class="tetel__torol--gomb"><i class="ion-ios-close-outline"></i></button>
                   </div>
@@ -137,7 +177,8 @@ const feluletVezerlo = (function () {
         html = `<div class="tetel clearfix" id="kia-${obj.id}">
       <div class="tetel__leiras">${obj.leiras}</div>
       <div class="right clearfix">
-        <div class="tetel__ertek">${obj.ertek}</div>
+        <div class="tetel__ertek">${szamFormazo(obj.ertek, tipus)}</div>
+        <div class="tetel__szazalek">20</div>
         <div class="tetel__torol">
           <button class="tetel__torol--gomb"><i class="ion-ios-close-outline"></i></button>
         </div>
@@ -166,12 +207,45 @@ const feluletVezerlo = (function () {
     },
 
     koltsegvetesMegjelenites: (obj) => {
-      DOMKoltsegvetesCimke.textContent = obj.koltsegvetes;
-      DOMOsszbevetelCimke.textContent = obj.osszBevetel;
-      DOMOsszkiadasCimke.textContent = obj.osszKiadas;
+      let tipus;
+
+      obj.koltsegVetes > 0 ? (tipus = 'bev') : 'kia';
+      DOMKoltsegvetesCimke.textContent = szamFormazo(obj.koltsegvetes, tipus);
+      DOMOsszbevetelCimke.textContent = szamFormazo(obj.koltsegvetes, 'bev');
+      DOMOsszkiadasCimke.textContent = szamFormazo(obj.koltsegvetes, 'kia');
       obj.szazalek > 0
         ? (DOMOszazalekCimke.textContent = obj.szazalek + '%')
         : (DOMOszazalekCimke.textContent = '-');
+    },
+
+    szazalekMegjelenitese: (szazalekok) => {
+      let elemek = document.querySelectorAll('.tetel__szazalek');
+      let elemekTomb = Array.from(elemek);
+      elemekTomb.forEach((current, index) => {
+        current.textContent = szazalekok[index] + '%';
+      });
+    },
+
+    datumMegjelenites: () => {
+      let most, ev, honap, honapok;
+      honapok = [
+        'január',
+        'február',
+        'március',
+        'április',
+        'május',
+        'június',
+        'július',
+        'augusztus',
+        'szeptember',
+        'október',
+        'november',
+        'december',
+      ];
+      most = new Date();
+      ev = most.getFullYear();
+      honap = most.getMonth();
+      DOMDatumCimke.textContent = `${ev}. ${honapok[honap]}`;
     },
   };
 })();
@@ -198,6 +272,12 @@ const vezerlo = (function (koltsegvetesVez, feluletVez) {
     feluletVezerlo.koltsegvetesMegjelenites(koltsegVetes);
   };
 
+  const szazalekFrissitese = () => {
+    koltsegvetesVezerlo.szazalekokSzamolasa();
+    let kiadasSzazlekok = koltsegvetesVezerlo.szazalekokLekerdezese();
+    feluletVezerlo.szazalekMegjelenitese(kiadasSzazlekok);
+  };
+
   const vezTetelHozzadas = () => {
     let input, ujTetel;
     input = feluletVezerlo.getInput();
@@ -216,13 +296,14 @@ const vezerlo = (function (koltsegvetesVez, feluletVez) {
       feluletVezerlo.urlapTorles();
 
       osszegFrissitese();
+
+      szazalekFrissitese();
     }
   };
 
   const vezTetelTorles = (event) => {
     let tetelID, splitID, tipus;
     tetelID = event.target.parentNode.parentNode.parentNode.parentNode.id;
-    console.log('EY MASIK ' + tetelID);
     if (tetelID) {
       splitID = tetelID.split('-');
       tipus = splitID[0];
@@ -234,11 +315,14 @@ const vezerlo = (function (koltsegvetesVez, feluletVez) {
     feluletVezerlo.tetelTorles(tetelID);
 
     osszegFrissitese();
+
+    szazalekFrissitese();
   };
 
   return {
     init: () => {
       console.log('fut');
+      feluletVezerlo.datumMegjelenites();
       feluletVezerlo.koltsegvetesMegjelenites({
         koltsegvetes: 0,
         osszBevetel: 0,
